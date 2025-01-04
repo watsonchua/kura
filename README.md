@@ -1,6 +1,8 @@
 # Introduction
 
-This is a simple reproduction of the analysis done in the [CLIO](https://www.anthropic.com/research/clio) paper.
+This is a simple reproduction of the analysis done in the [CLIO](https://www.anthropic.com/research/clio) paper. I've written a [walkthrough of the code](https://ivanleo.com/blog/understanding-user-conversations) that you can read to understand the high level ideas behind CLIO. The code isn't entirely optimised, I wrote it for fun over the weekend so I apologise in advance for any bugs.
+
+## What is CLIO?
 
 CLIO (Claude Language Insights and Observability) is a framework developed by Anthropic that enables privacy-preserving analysis of user conversations at scale. It works by combining language models and clustering techniques to generate meaningful insights while protecting user privacy. The system processes conversations through multiple stages of summarization and clustering, gradually abstracting away personal details while preserving important patterns and trends.
 
