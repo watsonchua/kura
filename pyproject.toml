@@ -1,0 +1,14 @@
+[project]
+name = "claude-chats"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "instructor[google-generative-ai,google-generativeai]>=1.7.2",
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.5",
+    "matplotlib>=3.10.0",
+    "pandas>=2.2.3",
+    "scikit-learn>=1.6.0",
+]
