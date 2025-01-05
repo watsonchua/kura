@@ -1,11 +1,11 @@
 import json
 from helpers.types import Conversation, Message, ConversationSummary
-from typing import Generator
+from typing import List
 import instructor
 from asyncio import Semaphore
 
 
-def load_conversations(path: str) -> Generator[Conversation, None, None]:
+def load_conversations(path: str) -> List[Conversation]:
     """
     This is a function that loads in the conversations from the given path and yields the user's conversations
     """

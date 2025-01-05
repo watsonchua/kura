@@ -7,11 +7,11 @@ from tqdm.asyncio import tqdm_asyncio as asyncio
 from rich import print
 
 
-async def main():
-    SUMMARIES_PER_CLUSTER = 20
-    CHILD_CLUSTERS_PER_CLUSTER = 10
-    MAX_FINAL_CLUSTERS = 10
-
+async def generate_clusters(
+    SUMMARIES_PER_CLUSTER=20,
+    CHILD_CLUSTERS_PER_CLUSTER=10,
+    MAX_FINAL_CLUSTERS=10,
+):
     conversations = load_conversations("conversations.json")
 
     client = instructor.from_gemini(
@@ -60,10 +60,10 @@ async def main():
     print(f"Reduced to {len(root_clusters)} root clusters")
 
     # # Then we just dump the final list of clusters into a json file
-    with open("clusters_prior.json", "w") as f:
+    with open("clusters.json", "w") as f:
         for cluster in clusters:
             f.write(cluster.model_dump_json() + "\n")
 
 
 if __name__ == "__main__":
-    run(main())
+    run(generate_clusters())

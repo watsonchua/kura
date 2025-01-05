@@ -10,5 +10,6 @@ dependencies = [
     "ipywidgets>=8.1.5",
     "matplotlib>=3.10.0",
     "pandas>=2.2.3",
+    "python-fasthtml>=0.10.3",
     "scikit-learn>=1.6.0",
 ]
