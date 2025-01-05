@@ -8,9 +8,42 @@ CLIO (Claude Language Insights and Observability) is a framework developed by An
 
 At its core, CLIO uses a two-step approach: first, it employs language models to create privacy-preserving summaries of individual conversations, removing any personally identifiable information (PII). Then, it uses clustering algorithms and hierarchical organization to group similar conversations together, allowing analysts to understand broad usage patterns and user needs without accessing sensitive user data. This methodology achieved a 98.5% success rate in PII removal while maintaining the ability to generate actionable insights from user interactions.
 
+This repo shows a simplified implementation of the CLIO framework. It's not optimised and it's not designed to be used in production. I've also provided a simple FastHTML app to help visualise the clusters and generate your own visualisations.
+
+![](https://r2-workers.ivanleomk9297.workers.dev/clio.gif)
+
+It's just a fun project to understand the ideas behind CLIO.
+
 ## Instructions
 
-> Before running the notebook, make sure that you've downloaded your claude chats. A guide on how to do so can be found [here](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-ai-data).
+I've provided two ways to run the code
+
+1. Using the FastHTML app - this allows you to visualise the clusters and generate your own visualisations. I recommend this since it's just nicer to use than a CLI
+2. Using the scripts directly - this allows you to run it in a script and get the raw `cluster.json` file generated out
+
+## Using the FastHTML app
+
+1. First, you need to install the dependencies inside the `pyproject.toml` file. I recommend doing so in a virtual environment.
+
+```bash
+uv venv
+source .venv/bin/activate
+uv sync
+```
+
+2. Then just run the `app.py` file
+
+```bash
+python app.py
+```
+
+3. Then you want to just click the `Start Analysis` button and wait for the clusters to be generated. Depending on the number of conversations you have this could take a while. For ~800 conversations, it took around 1.5 minutes to generate the clusters with a semaphore of 50.
+
+Once you've done so, I recommend just taking cluster.json and throwing it into something like Claude to ask more questions about the clusters.
+
+## Using the Scripts
+
+> Before running the scripts, make sure that you've downloaded your claude chats. A guide on how to do so can be found [here](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-ai-data).
 
 1. First, you need to install the dependencies inside the `pyproject.toml` file. I recommend doing so in a virtual environment.
 
