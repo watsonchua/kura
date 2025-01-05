@@ -15,6 +15,8 @@ from openai import AsyncOpenAI
 from sklearn.cluster import KMeans
 import numpy as np
 import random
+import os
+import json
 
 
 def cluster_items(items: list[dict], items_per_cluster: int) -> list[dict]:
@@ -98,19 +100,45 @@ async def generate_base_cluster(
         )
 
 
-async def cluster_summaries(
-    client: instructor.Instructor,
+async def embed_summaries(
+    oai_client: AsyncOpenAI,
     sem: Semaphore,
     summaries: list[dict],
-    items_per_cluster: int = 5,
-):
-    oai_client = AsyncOpenAI()
+    output_file: str = "checkpoints/embedded_summaries.json",
+    start_step: str = None,
+) -> list[dict]:
+    should_reembed = start_step in ["embed", "summarize"] if start_step else False
+
+    if not should_reembed and os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            return [json.loads(line) for line in f]
+
     embedded_summaries = await asyncio.gather(
         *[
             embed_summary(oai_client, sem, summary, summary["task_description"])
             for summary in summaries
         ],
         desc="Embedding summaries",
+    )
+
+    os.makedirs("checkpoints", exist_ok=True)
+    with open(output_file, "w") as f:
+        for summary in embedded_summaries:
+            f.write(json.dumps(summary) + "\n")
+
+    return embedded_summaries
+
+
+async def cluster_summaries(
+    client: instructor.Instructor,
+    sem: Semaphore,
+    summaries: list[dict],
+    items_per_cluster: int = 5,
+    start_step: str = None,
+):
+    oai_client = AsyncOpenAI()
+    embedded_summaries = await embed_summaries(
+        oai_client, sem, summaries, start_step=start_step
     )
 
     cluster_id_to_summaries = cluster_items(embedded_summaries, items_per_cluster)
@@ -293,15 +321,7 @@ async def generate_higher_level_cluster(
     clusters: list[Cluster],
 ) -> list[Cluster]:
     if len(clusters) == 1:
-        original_cluster = clusters[0]
-        new_cluster = Cluster(
-            name=original_cluster.name,
-            description=original_cluster.description,
-            chat_ids=original_cluster.chat_ids,
-            parent_id=None,
-        )
-        original_cluster.parent_id = new_cluster.id
-        return [original_cluster, new_cluster]
+        return clusters
 
     candidate_cluster_names = await generate_candidate_cluster_names(
         client, sem, clusters
