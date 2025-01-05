@@ -16,6 +16,8 @@ It's just a fun project to understand the ideas behind CLIO.
 
 ## Instructions
 
+> Make sure you have a `GOOGLE_API_KEY` set in your shell and `OPENAI_API_KEY` set in your shell.
+
 I've provided two ways to run the code
 
 1. Using the FastHTML app - this allows you to visualise the clusters and generate your own visualisations. I recommend this since it's just nicer to use than a CLI
