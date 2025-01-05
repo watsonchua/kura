@@ -39,7 +39,8 @@ app, rt = fast_app(
 
 
 center_style = (
-    Style("""
+    Style(
+        """
             body { 
                 font-family: system-ui, sans-serif;
                 max-width: 800px;
@@ -95,12 +96,26 @@ center_style = (
                 0% { transform: rotate(0deg); }
                 100% { transform: rotate(360deg); }
             }
-"""),
+            .submit-btn {
+                display: inline-block;
+                margin: 0.5rem;
+                background: #0066ff;
+                color: white;
+                padding: 0.5rem 1rem;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.75rem;
+            }
+"""
+    ),
 )
 
 
 @rt("/analyze")
-async def analyze():
+async def analyze(request: Request):
+    step = request.query_params.get("step")
+
     return Div(
         center_style,
         H1("Analyzing Your Chats", style="text-align: center;"),
@@ -112,24 +127,65 @@ async def analyze():
             ),
             cls="loading",
         ),
-        Script("""
-            async function startAnalysis() {
-                try {
-                    await fetch('/start-analysis');
+        Script(
+            f"""
+            async function startAnalysis() {{
+                try {{
+                    await fetch('/start-analysis{f"?step={step}" if step else ""}');
                     window.location.href = '/';
-                } catch (error) {
+                }} catch (error) {{
                     console.error('Analysis failed:', error);
-                }
-            }
+                }}
+            }}
             startAnalysis();
-        """),
+        """
+        ),
     )
 
 
 @rt("/start-analysis")
-async def start_analysis():
-    await generate_clusters()
+async def start_analysis(request: Request):
+    step = request.query_params.get("step")
+    await generate_clusters(start_step=step if step else None)
     return "Analysis complete"
+
+
+def create_analysis_buttons():
+    return Div(
+        H3("Analysis Options", style="text-align: center;"),
+        Div(
+            Form(
+                Input(
+                    type="submit",
+                    value="Start Fresh Analysis",
+                    cls="submit-btn",
+                ),
+                method="POST",
+                action="/analyze",
+                style="display: inline-block;",
+            ),
+            *[
+                Form(
+                    Input(
+                        type="submit",
+                        value=step_label,
+                        cls="submit-btn",
+                    ),
+                    method="POST",
+                    action=f"/analyze?step={step_name}",
+                    style="display: inline-block;",
+                )
+                for step_name, (step_label, prev_checkpoint) in {
+                    "summarize": ("Re-summarize Conversations", "summaries.json"),
+                    "embed": ("Re-embed Summaries", "embedded_summaries.json"),
+                    "cluster": ("Re-cluster Summaries", "base_clusters.json"),
+                }.items()
+                if os.path.exists(f"checkpoints/{prev_checkpoint}")
+            ],
+            style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem;",
+        ),
+        style="margin-bottom: 2rem; background: #f8f9fa; padding: 1rem; border-radius: 8px;",
+    )
 
 
 @rt("/")
@@ -144,29 +200,31 @@ async def index():
         )
 
     conversations = load_conversations("conversations.json")
-    clusters = None
+
+    # Replace both instances of the analysis buttons with the function call
+    analysis_options = create_analysis_buttons()
 
     if not os.path.exists("clusters.json"):
         return Div(
             center_style,
             H1("Chat Analysis Setup"),
-            Form(
-                Input(
-                    type="submit",
-                    value="Start Analysis",
-                    style="width: 200px; margin: 0 auto;",
-                ),
-                method="POST",
-                action="/analyze",
-                style="text-align: center;",
-            ),
+            analysis_options,
         )
 
     with open("clusters.json", "r") as f:
         clusters = [Cluster.model_validate_json(line) for line in f]
 
     # Create tree structure for visualization
-    def build_tree(cluster):
+    def build_tree(cluster, processed_clusters=None):
+        if processed_clusters is None:
+            processed_clusters = set()
+
+        # Skip if we've already processed this cluster
+        if cluster.id in processed_clusters:
+            return None
+
+        processed_clusters.add(cluster.id)
+
         # Create node for current cluster
         node_id = f"{cluster.name.lower()}-{cluster.count}".replace(" ", "-")
 
@@ -226,13 +284,17 @@ async def index():
 
         # Add children recursively if they exist
         if children:
-            children_div = Div(
-                *[build_tree(child) for child in children],
-                style="margin-left: 2rem; display: none;",  # Hidden by default
-                cls="children",
-                id=f"children-{node_id}",
-            )
-            return Div(node, children_div)
+            child_nodes = [build_tree(child, processed_clusters) for child in children]
+            # Filter out None values from already processed clusters
+            child_nodes = [n for n in child_nodes if n is not None]
+            if child_nodes:
+                children_div = Div(
+                    *child_nodes,
+                    style="margin-left: 2rem; display: none;",  # Hidden by default
+                    cls="children",
+                    id=f"children-{node_id}",
+                )
+                return Div(node, children_div)
         return node
 
     # Find root clusters and build tree
@@ -252,6 +314,8 @@ async def index():
 
     return Titled(
         "Chat Analysis",
+        create_analysis_buttons(),  # Replace the duplicate buttons with function call
+        # Existing visualization components
         Div(
             Div(
                 Div(
@@ -284,14 +348,16 @@ async def index():
             cls="row center-xs",
             style="color: #fff;",
         ),
-        Style("""
+        Style(
+            """
             .cluster-node {
                 background: #f5f5f5;
             }
             .cluster-node:hover {
                 background: #e5e5e5;
             }
-        """),
+        """
+        ),
         cluster_tree,
         generate_cumulative_chart(conversations),
         generate_messages_per_chat_chart(conversations),
