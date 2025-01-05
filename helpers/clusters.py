@@ -321,7 +321,15 @@ async def generate_higher_level_cluster(
     clusters: list[Cluster],
 ) -> list[Cluster]:
     if len(clusters) == 1:
-        return clusters
+        original_cluster = clusters[0]
+        new_cluster = Cluster(
+            name=original_cluster.name,
+            description=original_cluster.description,
+            chat_ids=original_cluster.chat_ids,
+            parent_id=None,
+        )
+        original_cluster.parent_id = new_cluster.id
+        return [original_cluster, new_cluster]
 
     candidate_cluster_names = await generate_candidate_cluster_names(
         client, sem, clusters
