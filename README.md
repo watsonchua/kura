@@ -10,7 +10,7 @@ At its core, CLIO uses a two-step approach: first, it employs language models to
 
 This repo shows a simplified implementation of the CLIO framework. It's not optimised and it's not designed to be used in production. I've also provided a simple FastHTML app to help visualise the clusters and generate your own visualisations.
 
-<img src="https://r2-workers.ivanleomk9297.workers.dev/clio.gif" alt="CLIO Visualisation">
+![](./clio.png)
 
 It's just a fun project to understand the ideas behind CLIO.
 
