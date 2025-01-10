@@ -1,35 +1,34 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import "./App.css";
+import { UploadButton } from "./components/upload-button";
+import type { Analytics } from "./types/analytics";
+import { AnalyticsCharts } from "./components/analytics-charts";
+import ClusterVisualisation from "./components/cluster";
+import UmapVisualisation from "./components/umap-visualisation";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [data, setData] = useState<Analytics | null>(null);
+
+  const handleUploadSuccess = (analyticsData: Analytics) => {
+    setData(analyticsData);
+  };
 
   return (
     <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="mx-auto max-w-7xl space-y-8 p-8">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold">Chat Analysis</h1>
+          <p className="text-sm text-muted-foreground">
+            Detailed metrics and insights about chat activity
+          </p>
+        </div>
+        <UploadButton onSuccess={handleUploadSuccess} />
+        {data && <AnalyticsCharts data={data} />}
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      {data && <ClusterVisualisation clusters={data.clusters} />}
+      {/* {data && <UmapVisualisation clusters={data.clusters} />} */}
     </>
-  )
+  );
 }
 
-export default App
+export default App;

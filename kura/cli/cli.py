@@ -1,18 +1,9 @@
 import typer
 import uvicorn
-from fastapi import FastAPI, staticfiles
-from pathlib import Path
+from kura.cli.server import api
 from rich import print
 
 app = typer.Typer()
-api = FastAPI()
-
-# Serve static files from web/dist
-web_dir = Path(__file__).parent.parent / "static" / "dist"
-if not web_dir.exists():
-    raise FileNotFoundError(f"Static files directory not found: {web_dir}")
-
-api.mount("/", staticfiles.StaticFiles(directory=str(web_dir), html=True))
 
 
 @app.command()
