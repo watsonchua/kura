@@ -15,6 +15,8 @@ from openai import AsyncOpenAI
 from sklearn.cluster import KMeans
 import numpy as np
 import random
+import os
+import json
 
 
 def cluster_items(items: list[dict], items_per_cluster: int) -> list[dict]:
@@ -98,19 +100,45 @@ async def generate_base_cluster(
         )
 
 
-async def cluster_summaries(
-    client: instructor.Instructor,
+async def embed_summaries(
+    oai_client: AsyncOpenAI,
     sem: Semaphore,
     summaries: list[dict],
-    items_per_cluster: int = 5,
-):
-    oai_client = AsyncOpenAI()
+    output_file: str = "checkpoints/embedded_summaries.json",
+    start_step: str = None,
+) -> list[dict]:
+    should_reembed = start_step in ["embed", "summarize"] if start_step else False
+
+    if not should_reembed and os.path.exists(output_file):
+        with open(output_file, "r") as f:
+            return [json.loads(line) for line in f]
+
     embedded_summaries = await asyncio.gather(
         *[
             embed_summary(oai_client, sem, summary, summary["task_description"])
             for summary in summaries
         ],
         desc="Embedding summaries",
+    )
+
+    os.makedirs("checkpoints", exist_ok=True)
+    with open(output_file, "w") as f:
+        for summary in embedded_summaries:
+            f.write(json.dumps(summary) + "\n")
+
+    return embedded_summaries
+
+
+async def cluster_summaries(
+    client: instructor.Instructor,
+    sem: Semaphore,
+    summaries: list[dict],
+    items_per_cluster: int = 5,
+    start_step: str = None,
+):
+    oai_client = AsyncOpenAI()
+    embedded_summaries = await embed_summaries(
+        oai_client, sem, summaries, start_step=start_step
     )
 
     cluster_id_to_summaries = cluster_items(embedded_summaries, items_per_cluster)
@@ -144,26 +172,37 @@ async def label_cluster(
                 {
                     "role": "system",
                     "content": """
-                    You are tasked with categorizing a specific cluster into one of the provided higher-level clusters for observability, monitoring, and content moderation. Your goal is to determine which higher-level cluster best fits the given specific cluster based on its name and description. You are helping to organize user behavior data in order to improve safety, monitoring, and observability.
+                    You are tasked with categorizing a specific cluster into one of the provided higher-level clusters for observability, monitoring, and content moderation. Your goal is to determine which higher-level cluster best fits the given specific cluster based on its name and description.
 
-                    First, carefully review the following list of higher-level clusters:
-
+                    First, here are the ONLY valid higher-level clusters you may select from:
                     <higher_level_clusters>
                     {% for cluster in candidate_clusters %}
                     <higher_level_cluster>{{ cluster }}</higher_level_cluster>
                     {% endfor %}
                     </higher_level_clusters>
 
-                    Now, carefully review the following cluster and its description:
+                    Here is the specific cluster to categorize:
+                    <specific_cluster>
+                    Name: {{ cluster["name"] }}
+                    Description: {{ cluster["description"] }}
+                    </specific_cluster>
 
-                    To categorize the specific cluster:
-                    1. Analyze the name and description of the specific cluster.
-                    2. Consider the key characteristics, themes, or subject matter of the specific cluster.
-                    3. Compare these elements to the higher-level clusters provided.
-                    4. Determine which higher-level cluster best encompasses the specific cluster. You MUST assign the specific cluster to the best higher-level cluster, even if multiple higher-level clusters could be considered.
-                    5. Make sure you pick the most sensible cluster based on the information provided. For example, don’t assign a cluster about "Machine Learning" to a higher-level cluster about "Social Media" just because both involve technology, and don’t assign a cluster about "Online Harassment" to a higher-level cluster about "Technology" just because both involve online platforms. Be specific and accurate in your categorization.
+                    RULES:
+                    1. You MUST select EXACTLY ONE higher-level cluster from the provided list
+                    2. You MUST output the higher-level cluster name EXACTLY as written - no modifications allowed
+                    3. You MUST NOT create new cluster names or combinations
+                    4. You MUST NOT output any additional text or explanations
+                    5. You MUST NOT use partial matches or approximate names
 
-                    Here is the specific cluster to cateegorize:
+                    CLASSIFICATION PROCESS:
+                    1. First, record the exact list of valid higher-level clusters
+                    2. Read the specific cluster's name and description carefully
+                    3. Compare the specific cluster's key characteristics against each valid higher-level cluster
+                    4. Select the single most appropriate higher-level cluster that encompasses the specific cluster
+                    5. Verify your selected cluster exactly matches one from the valid list
+                    6. Output ONLY the selected higher-level cluster name, exactly as it appeared in the valid list
+
+                    Here is the specific cluster to categorize:
 
                     <specific_cluster>
                     Name: {{ cluster["name"] }}
@@ -174,10 +213,13 @@ async def label_cluster(
                     """,
                 }
             ],
-            context={"cluster": cluster, "candidate_clusters": candidate_clusters},
+            context={
+                "cluster": cluster,
+                "candidate_clusters": candidate_clusters,
+            },
             response_model=ClusterLabel,
+            max_retries=3,
         )
-
     return {
         "cluster": cluster,
         "higher_level_cluster": label.higher_level_cluster,
@@ -222,6 +264,7 @@ async def generate_candidate_cluster_names(
                 (len(clusters) * 3) // 4
             ),  # This ensure we get at least 3/4 of the clusters ( so we have a 25% reduction or more at each stage)
         },
+        max_retries=3,
     )
 
     return resp.candidate_cluster_names
