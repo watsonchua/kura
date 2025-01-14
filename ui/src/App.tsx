@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./App.css";
 import { UploadButton } from "./components/upload-button";
 import type { Analytics } from "./types/analytics";
 import { AnalyticsCharts } from "./components/analytics-charts";
@@ -14,18 +13,20 @@ function App() {
 
   return (
     <>
-      <div className="mx-auto max-w-7xl space-y-8 p-8">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold">Chat Analysis</h1>
-          <p className="text-sm text-muted-foreground">
-            Detailed metrics and insights about chat activity
-          </p>
+      <div className="max-w-7xl mx-auto mb-10">
+        <div className="space-y-8 p-8">
+          <div className="space-y-2 text-center">
+            <h1 className="text-2xl font-semibold">Chat Analysis</h1>
+            <p className="text-sm text-muted-foreground">
+              Detailed metrics and insights about chat activity
+            </p>
+          </div>
+          <UploadButton onSuccess={handleUploadSuccess} />
+          {data && <AnalyticsCharts data={data} />}
         </div>
-        <UploadButton onSuccess={handleUploadSuccess} />
-        {data && <AnalyticsCharts data={data} />}
       </div>
+
       {data && <ClusterVisualisation clusters={data.clusters} />}
-      {/* {data && <UmapVisualisation clusters={data.clusters} />} */}
     </>
   );
 }

@@ -1,26 +1,6 @@
 from pydantic import BaseModel, Field, computed_field
-from datetime import datetime
 import uuid
 from typing import Union
-
-
-class Message(BaseModel):
-    created_at: datetime
-    role: str
-    content: str
-
-
-class Conversation(BaseModel):
-    chat_id: str
-    created_at: datetime
-    messages: list[Message]
-
-
-class ConversationSummary(BaseModel):
-    chat_id: str
-    task_description: str
-    user_request: str
-    metadata: dict
 
 
 class Cluster(BaseModel):
@@ -40,7 +20,3 @@ class Cluster(BaseModel):
 class GeneratedCluster(BaseModel):
     name: str
     summary: str
-
-
-class CachedCluster(Cluster):
-    umap_embedding: list[float]
