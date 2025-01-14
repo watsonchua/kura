@@ -1,6 +1,6 @@
 import pandas as pd
 from typing import List
-from helpers.types import Conversation
+from kura.types import Conversation
 
 
 def generate_cumulative_chart_data(conversations: List[Conversation]) -> dict:

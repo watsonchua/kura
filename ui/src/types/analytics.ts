@@ -12,6 +12,9 @@ export const Cluster = z.object({
   chat_ids: z.array(z.string()),
   parent_id: z.string().nullable(),
   count: z.number(),
+  x_coord: z.number(),
+  y_coord: z.number(),
+  level: z.number(),
 });
 
 export const analyticsSchema = z.object({

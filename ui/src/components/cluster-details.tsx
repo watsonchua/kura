@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { FolderOpen, MessageCircle } from "lucide-react";
 import { Cluster } from "@/types/analytics";
@@ -50,7 +49,6 @@ export default function ClusterDetail({ cluster }: ClusterDetailProps) {
                 </Badge>
               </div>
             </div>
-            <Separator className="bg-border/60" />
           </CardHeader>
 
           <CardContent className="px-0 space-y-8">

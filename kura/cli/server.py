@@ -2,7 +2,8 @@ from fastapi import FastAPI, staticfiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from pathlib import Path
-from kura.types import Cluster, Conversation, Message
+from kura import Kura
+from kura.types import ProjectedCluster, Conversation, Message
 from kura.cli.visualisation import (
     generate_cumulative_chart_data,
     generate_messages_per_chat_data,
@@ -57,16 +58,24 @@ async def analyse_conversations(conversation_data: ConversationData):
     ]
 
     # Load clusters from checkpoint file if it exists
-    clusters_file = Path(__file__).parent.parent.parent / "checkpoints/clusters.json"
+    clusters_file = (
+        Path(__file__).parent.parent.parent
+        / "checkpoints/dimensionality_checkpoints.json"
+    )
     clusters = []
-    print(clusters_file)
-    if clusters_file.exists():
-        print("")
-        with open(clusters_file) as f:
-            clusters_data = []
-            for line in f:
-                clusters_data.append(line)
-            clusters = [Cluster(**json.loads(cluster)) for cluster in clusters_data]
+
+    if not clusters_file.exists():
+        kura = Kura()
+        kura.conversations = conversations
+        await kura.cluster_conversations()
+
+    with open(clusters_file) as f:
+        clusters_data = []
+        for line in f:
+            clusters_data.append(line)
+        clusters = [
+            ProjectedCluster(**json.loads(cluster)) for cluster in clusters_data
+        ]
 
     return {
         "cumulative_words": generate_cumulative_chart_data(conversations),

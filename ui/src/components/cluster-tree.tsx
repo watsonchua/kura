@@ -9,6 +9,7 @@ import { Cluster } from "@/types/analytics";
 interface ClusterTreeProps {
   clusters: Cluster[];
   selectedClusterId: string | null;
+  levelMap: Map<number, Cluster[]>;
   onSelectCluster: (cluster: Cluster) => void;
 }
 
@@ -18,6 +19,7 @@ interface ClusterTreeItemProps {
   level: number;
   selectedClusterId: string | null;
   onSelectCluster: (cluster: Cluster) => void;
+  levelMap: Map<number, Cluster[]>;
 }
 
 function ClusterTreeItem({
@@ -25,12 +27,15 @@ function ClusterTreeItem({
   allClusters,
   level,
   selectedClusterId,
+  levelMap,
   onSelectCluster,
 }: ClusterTreeItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const childClusters = allClusters.filter((c) => c.parent_id === cluster.id);
-  const hasChildren = childClusters.length > 0;
-  const percentage = ((cluster.count / 10000) * 100).toFixed(1);
+
+  const total_count =
+    levelMap.get(level)?.reduce((acc, curr) => acc + curr.count, 0) || 0;
+  const percentage = (cluster.count / total_count) * 100;
 
   return (
     <div className="text-md text-left">
@@ -47,7 +52,7 @@ function ClusterTreeItem({
         style={{ paddingLeft: `${level * 16 + 12}px` }}
         onClick={() => onSelectCluster(cluster)}
       >
-        {hasChildren ? (
+        {childClusters.length > 0 ? (
           <Button
             variant="ghost"
             size="sm"
@@ -68,8 +73,8 @@ function ClusterTreeItem({
         )}
         <span className="flex-1 font-medium truncate">{cluster.name}</span>
         <span className="text-xs text-muted-foreground whitespace-nowrap">
-          {percentage}% • {cluster.count.toLocaleString()} records
-          {hasChildren && ` • ${childClusters.length} children`}
+          {percentage.toFixed(2)}% • {cluster.count.toLocaleString()}
+          {childClusters.length > 0 && ` • ${childClusters.length}`}
         </span>
       </div>
       {isExpanded &&
@@ -80,6 +85,7 @@ function ClusterTreeItem({
             allClusters={allClusters}
             level={level + 1}
             selectedClusterId={selectedClusterId}
+            levelMap={levelMap}
             onSelectCluster={onSelectCluster}
           />
         ))}
@@ -91,8 +97,9 @@ export function ClusterTree({
   clusters,
   selectedClusterId,
   onSelectCluster,
+  levelMap,
 }: ClusterTreeProps) {
-  const rootClusters = clusters.filter((cluster) => cluster.parent_id === null);
+  const rootClusters = levelMap.get(0) || [];
 
   return (
     <div className="h-full flex flex-col">
@@ -106,6 +113,7 @@ export function ClusterTree({
             <ClusterTreeItem
               key={cluster.id}
               cluster={cluster}
+              levelMap={levelMap}
               allClusters={clusters}
               level={0}
               selectedClusterId={selectedClusterId}
