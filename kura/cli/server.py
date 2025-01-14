@@ -64,14 +64,12 @@ async def analyse_conversations(conversation_data: ConversationData):
     )
     clusters = []
 
-    print(clusters_file)
-
     # Load clusters from checkpoint file if it exists
 
     if not clusters_file.exists():
         kura = Kura(
             checkpoint_dir=Path(os.path.abspath(os.environ["KURA_CHECKPOINT_DIR"])),
-            conversations=conversations[:100],
+            conversations=conversations,
         )
         await kura.cluster_conversations()
 
