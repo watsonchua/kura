@@ -19,10 +19,21 @@ Once you've installed the package with the command `pip install kura`, you can u
 
 ```python
 from kura import Kura
+from kura.embedding import OpenAIEmbeddingModel
+from kura.summarisation import SummaryModel
+from kura.dimensionality import DimensionalityReduction
+from asyncio import run
 
-kura = Kura() # The default models and parameters are here
-kura.load_conversations(conversations) # Load your conversations
-kura.cluster_conversations() # This creates the hierachal clusters for your specific usage
+kura = Kura(
+    embedding_model=OpenAIEmbeddingModel(),
+    summarisation_model=SummaryModel(),
+    dimensionality_reduction=DimensionalityReduction(),
+    max_clusters=10,
+    checkpoint_dir="./checkpoints",
+)
+kura.load_conversations("conversations.json")
+run(kura.cluster_conversations())
+
 ```
 
 We expose the following parameters that you can use
