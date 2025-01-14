@@ -25,10 +25,17 @@ class Kura:
         meta_cluster_model: BaseMetaClusterModel = MetaClusterModel(),
         dimensionality_reduction: BaseDimensionalityReduction = HDBUMAP(),
         max_clusters: int = 10,
-        checkpoint_dir: str = "checkpoints",
+        checkpoint_dir: str = "./checkpoints",
         cluster_checkpoint_name: str = "clusters.json",
         meta_cluster_checkpoint_name: str = "meta_clusters.json",
     ):
+        # Override checkpoint dirs so that they're the same for the models
+        summarisation_model.checkpoint_dir = checkpoint_dir
+        cluster_model.checkpoint_dir = checkpoint_dir
+        meta_cluster_model.checkpoint_dir = checkpoint_dir
+        dimensionality_reduction.checkpoint_dir = checkpoint_dir
+
+        self.embedding_model = embedding_model
         self.embedding_model = embedding_model
         self.summarisation_model = summarisation_model
         self.conversations = conversations

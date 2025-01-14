@@ -11,6 +11,7 @@ from kura.cli.visualisation import (
     generate_new_chats_per_week_data,
 )
 import json
+import os
 
 api = FastAPI()
 
@@ -57,16 +58,21 @@ async def analyse_conversations(conversation_data: ConversationData):
         for conversation in conversation_data.data
     ]
 
-    # Load clusters from checkpoint file if it exists
     clusters_file = (
-        Path(__file__).parent.parent.parent
-        / "checkpoints/dimensionality_checkpoints.json"
+        Path(os.path.abspath(os.environ["KURA_CHECKPOINT_DIR"]))
+        / "dimensionality_checkpoints.json"
     )
     clusters = []
 
+    print(clusters_file)
+
+    # Load clusters from checkpoint file if it exists
+
     if not clusters_file.exists():
-        kura = Kura()
-        kura.conversations = conversations
+        kura = Kura(
+            checkpoint_dir=Path(os.path.abspath(os.environ["KURA_CHECKPOINT_DIR"])),
+            conversations=conversations[:100],
+        )
         await kura.cluster_conversations()
 
     with open(clusters_file) as f:
