@@ -1,0 +1,5 @@
+site_name: Kura
+site_url: https://usekura.xyz
+site_description: an example blog set up following the blog tutorials
+theme:
+  name: material
