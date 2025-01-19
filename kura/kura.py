@@ -101,30 +101,3 @@ class Kura:
         )
 
         return dimensionality_reduced_clusters
-
-    def load_conversations_from_file(self, file_path: str):
-        """Load a list of conversations from a file in Claude's conversation format dump"""
-        with open(file_path, "r") as f:
-            conversations = []
-            for conversation in json.load(f):
-                conversations.append(
-                    Conversation(
-                        chat_id=conversation["uuid"],
-                        created_at=conversation["created_at"],
-                        messages=[
-                            Message(
-                                created_at=message["created_at"],
-                                role=message["sender"],
-                                content="\n".join(
-                                    [
-                                        item["text"]
-                                        for item in message["content"]
-                                        if item["type"] == "text"
-                                    ]
-                                ),
-                            )
-                            for message in conversation["chat_messages"]
-                        ],
-                    )
-                )
-            self.conversations = conversations
