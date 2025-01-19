@@ -80,7 +80,6 @@ function ClusterTreeItem({
       {isExpanded &&
         childClusters.map((child) => (
           <ClusterTreeItem
-            conversations={conversations}
             key={child.id}
             cluster={child}
             allClusters={allClusters}

@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { FolderOpen, MessageCircle } from "lucide-react";
 import { Cluster } from "@/types/analytics";
 import { Conversation } from "@/types/conversation";
-import { Dialog } from "./ui/dialog";
 import ChatDialog from "./ChatDialog";
 
 interface ClusterDetailProps {
