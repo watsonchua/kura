@@ -19,6 +19,7 @@ plugins:
       categories:
         - categories
         - tags
+      use_git: false
 
 markdown_extensions:
   - pymdownx.highlight:
