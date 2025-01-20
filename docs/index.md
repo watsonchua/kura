@@ -4,28 +4,47 @@
 
 Kura is a library that aims to help you make sense of user data. By using language models to iteratively summarise and cluster conversations, it provides a modular and flexible way for you to understand broad high level trends in your user base.
 
+It's built with the same ideas as [CLIO](https://www.anthropic.com/research/clio) but open-sourced so that you can try it on your own data. I've written a [walkthrough of the code](https://ivanleo.com/blog/understanding-user-conversations) that you can read to understand the high level ideas behind CLIO.
+
+The work behind Kura is kindly sponsored by [Improving RAG](http://improvingrag.com). If you're looking for a way to make sense of user data and tame your user application, please check them out.
+
 ### Why is it useful?
 
-Traditional approaches like BERTopic are incredibly useful for understanding the underlying structure of your data. However, they are not always the best tool for the job. Kura implements a modular approach that integrates language models at each step of the process to help provide structure and insights.
+By combining traditional clustering techniques with language models, we can get a much better understanding of the underlying structure of your data. For instance, using kura, we can identify clusters not by the content of the conversations but by the specific user intent.
 
-Key Features
+Our API is designed to be modular and flexible so that you can easily extend it to fit your needs. Here's an example of how you can use it to cluster your own claude conversation history.
 
-- A modular approach that allows you to fully customise the summarisation, clustering and embedding models used
-- A CLI tool that makes it easy to get started and visualise your data clusters
-- Extendable API that allows you to extract additional metadata from conversations and clusters in your own analysis.
+!!! note
 
-Here is the rough road map of what I'm working on, contributions are welcome!
+    If you're using a different formatting for your messages, you can also just manually create a list of `Convesation` objects and pass them into the `cluster_conversations` method. This is useful if you're exporting conversations from a different source
 
+```py
+from kura import Kura
+from asyncio import run
+from kura.types import Conversation
+
+
+kura = Kura()
+conversations: list[Conversation] = Conversation.from_claude_conversation_dump(
+    "conversations.json"
+)
+run(kura.cluster_conversations(conversations))
+```
+
+## Roadmap
+
+Kura is currently under active development and I'm working on adding more features to it. On a high level, I'm working on writing out more examples on how to swap out specific components of the pipeline to fit your needs as well as to improve on the support for different conversation formats.
+
+Here's a rough roadmap of what I'm working on, contributions are welcome!
+
+- [x] Implement a simple Kura clustering class
+- [x] Implement a Kura CLI tool
+- [ ] Support hooks that can be ran on individual conversations and clusters to extract metadata
 - [ ] Support heatmap visualisation
 - [ ] Support ChatGPT conversations
-- [ ] Support hooks that can be ran on individual conversations and clusters to extract metadata
-- [ ] Show how we can use Kura with other configurations such as UMAp instead of KMeans
-
-It's currently under active development and I'm working on adding more features to it but the eventual goal is to make it a very modular tool that you can use to understand general trends in your user base. If you face any issues or have any suggestions, please feel free to open an issue or a PR.
-
-## Technical Ideas
-
-It's built with the same ideas as [CLIO](https://www.anthropic.com/research/clio) but open-sourced so that you can try it on your own data. I've written a [walkthrough of the code](https://ivanleo.com/blog/understanding-user-conversations) that you can read to understand the high level ideas behind CLIO.
+- [ ] Show how we can use Kura with other configurations such as UMAP instead of KMeans earlier on
+- [ ] Support more clients/conversation formats
+- [ ] Provide support for the specific flag that we can use in the CLi to specify the clustering directory and the port
 
 I've also recorded a technical deep dive into what Kura is and the ideas behind it if you'd rather watch than read.
 
@@ -33,19 +52,41 @@ I've also recorded a technical deep dive into what Kura is and the ideas behind 
 
 ## Getting Started
 
-To get started with Kura, you'll need to install our python package.
+!!! note
+
+    Kura ships using the `gemini-1.5-flash` model by default. You must set a `GOOGLE_API_KEY` environment variable in your shell to use the Google Gemini API. If you don't have one, [you can get one here](https://aistudio.google.com/prompts/new_chat).
+
+To get started with Kura, you'll need to install our python package and have a list of conversations to cluster.
+
+=== "pip"
+
+    ```bash
+    pip install kura
+    ```
+
+=== "uv"
+
+    ```bash
+    uv pip install kura
+    ```
+
+If you're using the Claude app, you can export your conversation history [here](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-ai-data) and use the `Conversation.from_claude_conversation_dump` method to load them into Kura.
+
+If you don't have a list of conversations on hand, we've also uploaded a sample dataset of [190+ conversations onto hugging face](https://huggingface.co/datasets/ivanleomk/synthetic-gemini-conversations) that were synthetically generated by Gemini which we used to validate Kura's clustering ability.
+
+Kura ships with an automatic checkpointing system that saves the state of the clustering process to disk so that you can resume from where you left off so there's no need to worry about losing your clustering progress.
+
+With your conversations on hand, there are two ways that you can run clustering with Kura.
+
+### CLI
+
+We provide a simple CLI tool that runs Kura with some default settings and a react frontend with associated visualisation. To boot it up, simply run the following command:
 
 ```bash
-pip install kura
+kura
 ```
 
-Once you've done so, you can run your first clustering job either with our CLI tool that provides a react frontend with the associated visualisations or you can use the Python package to do it programatically.
-
-Either way, make sure that you've defined a `GOOGLE_API_KEY` environment variable to use the Google Gemini API. We ship by default with the `gemini-1.5-flash` model which works reasonbly well for this task.
-
-### Using the CLI
-
-You can boot up our CLI tool with the following command:
+This will in turn start up a local FastAPI server that you can interact with to upload your data and visualise the clusters. It roughly takes ~1 min for ~1000 conversations with a semaphore of around 50 requests at any given time. If you have higher concurrency, you can increase the semaphore to speed up the process.
 
 ```bash
 > kura
@@ -55,7 +96,7 @@ INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
 ```
 
-This will start a local FastAPI server that you can interact with to upload your data and visualise the clusters. It roughly takes ~1 min for ~1000 conversations with a semaphore of around 50 requests at any given time. If you have higher concurrency, you can increase the semaphore to speed up the process.
+**You can combine multiple different conversation files into a single cluster by uploading them all at once.**. We also provide options to modify parameters such as the maximum number of clusters and whether you'd like to rerun the clustering process out of the box.
 
 ### Using the Python API
 
@@ -64,19 +105,72 @@ You can also use the Python API to do the same thing.
 ```python
 from kura import Kura
 from asyncio import run
+from kura.types import Conversation
+
 
 kura = Kura()
-kura.load_conversations_from_file("conversations.json")
-run(kura.cluster_conversations())
+conversations: list[Conversation] = Conversation.from_claude_conversation_dump(
+    "conversations.json"
+)
+run(kura.cluster_conversations(conversations))
+
 ```
 
 We assume here that you have a `conversations.json` file in your current working directory which contains data in the format of the Claude Conversation Dump. You can see a guide on how to export your conversation history from the Claude app [here](https://support.anthropic.com/en/articles/9450526-how-can-i-export-my-claude-ai-data).
 
-Support for other formats is coming soon. Until then you can also manually set conversations in the `Kura` class by doing
+## Loading Custom Conversations
+
+As mentioned above, if you're using a different formatting for your messages, you can also just manually create a list of `Conversation` objects and pass them into the `cluster_conversations` method. This is useful if you're exporting conversations from a different source.
+
+Let's take the following example of a conversation
 
 ```python
-kura = Kura()
-kura.conversations = # conversations go here
+conversations = [
+    {
+        "role": "user",
+        "content": "Hello, how are you?"
+    },
+    {
+        "role": "assistant",
+        "content": "I'm fine, thank you!"
+    }
+]
 ```
 
-All you need is to pass in a list of `Conversation` objects which you can import from `from kura.types import Conversation`.
+We can then manually create a `Conversation` object from this and pass it into the `cluster_conversations` method.
+
+```python
+from kura.types import Conversation
+from uuid import uuid4
+
+conversation = [
+    Conversation(
+        messages=[
+            Message(
+                created_at=str(datetime.now()),
+                role=message["role"],
+                content=message["content"],
+            )
+            for message in conversation
+        ],
+        id=str(uuid4()),
+        created_at=datetime.now(),
+    )
+]
+
+```
+
+Once you've done so, you can then pass this list of conversations into the `cluster_conversations` method.
+
+!!! note
+
+    To run clustering you should have ~100 conversations on hand. If not, the clusters don't really make much sense since the language model will have a hard time generating meaningful clusters of user behaviour
+
+```python
+from kura.types import Conversation
+
+conversations: list[Conversation] = Conversation.from_claude_conversation_dump(
+    "conversations.json"
+)
+run(kura.cluster_conversations(conversations))
+```

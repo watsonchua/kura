@@ -1,5 +1,39 @@
 site_name: Kura
 site_url: https://usekura.xyz
 site_description: an example blog set up following the blog tutorials
+
 theme:
   name: material
+  features:
+    - content.code.select
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+
+plugins:
+  - blog
+  - rss:
+      match_path: blog/posts/.*
+      date_from_meta:
+        as_creation: date
+      categories:
+        - categories
+        - tags
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - attr_list
+  - md_in_html
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tabbed:
+      alternate_style: true

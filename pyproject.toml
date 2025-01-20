@@ -29,8 +29,10 @@ build-backend = "hatchling.build"
 docs = [
     "mkdocs-material>=9.5.49",
     "mkdocs-minify-plugin>=0.8.0",
+    "mkdocs-rss-plugin>=1.17.1",
     "mkdocstrings>=0.27.0",
     "mkdocstrings-python>=1.13.0",
+    "pymdown-extensions>=10.14",
 ]
 dev = [
     "pyright>=1.1.392.post0",
