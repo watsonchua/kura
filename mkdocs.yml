@@ -2,6 +2,11 @@ site_name: Kura
 site_url: https://usekura.xyz
 site_description: an example blog set up following the blog tutorials
 
+extra:
+  analytics:
+    provider: google
+    property: G-5ZYBS2C5VF
+
 theme:
   name: material
   features:
