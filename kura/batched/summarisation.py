@@ -1,3 +1,4 @@
+from pathlib import Path
 from kura.base_classes import BaseSummaryModel
 from kura.types import Conversation, ConversationSummary
 from kura.types.summarisation import GeneratedSummary
@@ -10,68 +11,67 @@ import os
 from dotenv import load_dotenv, find_dotenv
 from openai import AsyncOpenAI
 import asyncio
-
+from tqdm.auto import tqdm
 
 load_dotenv(find_dotenv())
 vertexai.init()
 
-class SummaryModel(BaseSummaryModel):
+
+def dump_summary_to_jsonl(
+    summaries: list[ConversationSummary], output_folder: Path
+):
+    output_folder.mkdir(parents=True, exist_ok=True)
+    with open(output_folder / "summaries.jsonl", "a") as f:
+        for summary in summaries:
+            f.write(summary.model_dump_json() + "\n")
+
+class SummaryModel:
     def __init__(
         self,
-        max_concurrent_requests: int = 50,
     ):
-        self.sem = Semaphore(max_concurrent_requests)
-        # self.client = instructor.from_gemini(
-        #     genai.GenerativeModel(
-        #         model_name="gemini-1.5-flash-latest",
-        #     ),
-        #     use_async=True,
-        # )
 
-        # self.client = instructor.from_openai(
-        #     AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ["OPENAI_API_BASE"]),
-        #     # use_async=True,
+        # self.client = instructor.from_vertexai(
+        #     vertexai.generative_models.GenerativeModel("gemini-1.5-flash-001"), 
+        #     mode=instructor.Mode.VERTEXAI_TOOLS
         # )
 
 
-        self.client = instructor.from_vertexai(
-            vertexai.generative_models.GenerativeModel("gemini-1.5-flash-001"), 
-            _async=True,
-            mode=instructor.Mode.VERTEXAI_TOOLS
+        self.client = instructor.from_openai(        
+            AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ["OPENAI_API_BASE"]),
+            # use_async=True,
         )
         
 
     async def summarise(
-        self, conversations: list[Conversation]
-    ) -> list[ConversationSummary]:
+        self, conversations: list[Conversation], output_folder: Path
+    ):
 
-        summaries = []
-        batch_size = 100  # Adjust the batch size as needed
-        for i in range(0, len(conversations), batch_size):
+        batch_size = 100
+        for i in tqdm(range(0, len(conversations), batch_size)):            
             batch = conversations[i:i + batch_size]
-            batch_summaries = await tqdm_asyncio.gather(
-                *[
-                    self.summarise_conversation(conversation)
-                    for conversation in batch
-                ],
-                desc=f"Summarising batch {i // batch_size + 1} of {len(conversations) // batch_size + 1}",
-            )
-            summaries.extend(batch_summaries)
+            try:
+                batch_summaries = await asyncio.gather(*[self.summarise_conversation(convo) for convo in tqdm(batch)])
+                await asyncio.to_thread(dump_summary_to_jsonl, batch_summaries, output_folder)
+            except Exception as e:
+                print(e)
+                continue
+                       
+            # summaries.extend(batch_summaries)
             # await asyncio.sleep(1)  # Add a sleep to avoid hitting the rate limit
-        return summaries
+        # return summaries
 
-    async def apply_hooks(
-        self, conversation: ConversationSummary
-    ) -> ConversationSummary:
-        # TODO: Implement hooks here for extra metadata extraction
-        return await super().apply_hooks(conversation)
+    # async def apply_hooks(
+    #     self, conversation: ConversationSummary
+    # ) -> ConversationSummary:
+    #     # TODO: Implement hooks here for extra metadata extraction
+    #     return await super().apply_hooks(conversation)
 
     async def summarise_conversation(
         self, conversation: Conversation
     ) -> ConversationSummary:
         resp = await self.client.chat.completions.create(
             # model = "gemini-1.5-flash-001",
-            # model = "gpt-4o-eastus",
+            model = "gpt-4o-eastus",
             # model = "gpt-4o-mini-eastus",
 
             messages=[
