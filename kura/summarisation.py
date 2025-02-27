@@ -28,17 +28,17 @@ class SummaryModel(BaseSummaryModel):
         #     use_async=True,
         # )
 
-        # self.client = instructor.from_openai(
-        #     AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ["OPENAI_API_BASE"]),
-        #     # use_async=True,
-        # )
-
-
-        self.client = instructor.from_vertexai(
-            vertexai.generative_models.GenerativeModel("gemini-1.5-flash-001"), 
-            _async=True,
-            mode=instructor.Mode.VERTEXAI_TOOLS
+        self.client = instructor.from_openai(
+            AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"], base_url=os.environ["OPENAI_API_BASE"]),
+            # use_async=True,
         )
+
+
+#        self.client = instructor.from_vertexai(
+#            vertexai.generative_models.GenerativeModel("gemini-1.5-flash-001"), 
+#            _async=True,
+#            mode=instructor.Mode.VERTEXAI_TOOLS
+#        )
         
 
     async def summarise(
@@ -71,7 +71,7 @@ class SummaryModel(BaseSummaryModel):
     ) -> ConversationSummary:
         resp = await self.client.chat.completions.create(
             # model = "gemini-1.5-flash-001",
-            # model = "gpt-4o-eastus",
+            model = "gpt-4o-eastus",
             # model = "gpt-4o-mini-eastus",
 
             messages=[
